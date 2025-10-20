@@ -13,6 +13,8 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -20,6 +22,9 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.testfieldapp.model.UiNote
 import com.example.testfieldapp.viewmodel.MainViewModel
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import kotlinx.coroutines.flow.StateFlow
 
 @Composable
 fun NoteListWidget(
@@ -27,7 +32,6 @@ fun NoteListWidget(
     viewModel: MainViewModel
 ) {
     val notes = viewModel.currentTune.collectAsStateWithLifecycle()
-    val selectedNote = viewModel.selectedNote.collectAsStateWithLifecycle()
 
     Row(
         modifier = Modifier
@@ -37,8 +41,8 @@ fun NoteListWidget(
     ) {
         for (note in notes.value.notes) {
             NoteWidget(
+                viewModel,
                 note,
-                selectedNote.value == note,
                 Color.Cyan,
                 onClick = {
                     viewModel.changeSelectedNote(note)
@@ -49,20 +53,30 @@ fun NoteListWidget(
 
 @Composable
 fun NoteWidget(
+    viewModel: MainViewModel,
     note: UiNote,
-    isSelected: Boolean,
     color: Color,
     onClick: () -> Unit,
 ) {
-    val backgroundColor = if (isSelected) color else Color.Transparent
-    val textColor = if (isSelected) Color.Black else Color.Cyan
+    val selectedNote = viewModel.selectedNote.collectAsStateWithLifecycle()
+    val completion = viewModel.completionState.collectAsStateWithLifecycle()
+
+    var isCompleted: Boolean by remember { mutableStateOf(false) }
+
+    if (completion.value != null && note.octave == completion.value?.octave && note.note.noteIndex == completion.value?.noteIndex) {
+        isCompleted = true
+    }
+
+    val backgroundColor = if (selectedNote.value == note) color else Color.Transparent
+    val textColor = if (selectedNote.value == note) Color.Black else Color.Cyan
+    val borderColor = if (isCompleted) Color.Green else Color.White
 
     Column(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         OutlinedButton(
             shape = RoundedCornerShape(20.dp),
-            border = BorderStroke(2.dp, Color.White),
+            border = BorderStroke(2.dp, borderColor),
             contentPadding = PaddingValues(0.dp),
             modifier = Modifier
                 .size(56.dp),

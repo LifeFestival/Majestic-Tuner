@@ -7,6 +7,7 @@ import android.media.MediaRecorder
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.testfieldapp.model.CompletionState
 import com.example.testfieldapp.model.GuitarTune
 import com.example.testfieldapp.model.Note
 import com.example.testfieldapp.model.UiNote
@@ -53,9 +54,14 @@ class MainViewModel : ViewModel() {
     private val _selectedNote = MutableStateFlow(_currentTune.value.notes.first())
     val selectedNote = _selectedNote.asStateFlow()
 
+    private val _completionState = MutableStateFlow<CompletionState?>(null)
+    val completionState = _completionState.asStateFlow()
+
     private var recordingJob: Job? = null
 
     private var recorder: AudioRecord? = null
+
+    private var completionCounter: Int = 0
 
     @SuppressLint("MissingPermission")
     private fun createRecorder() {
@@ -117,7 +123,22 @@ class MainViewModel : ViewModel() {
         //Создаем UI модель
         val note = frequencyToNote(frequency)
 
+        //Проверяем результат
+        checkCompletion(note)
+
         _currentNote.value = note
+    }
+
+    private fun checkCompletion(note: UiNote) {
+        if (note.octave == selectedNote.value.octave && note.note.noteIndex == _selectedNote.value.note.noteIndex) {
+            completionCounter++
+
+            if (completionCounter >= 5) {
+                _completionState.value = CompletionState(note.octave, note.note.noteIndex)
+            }
+        } else {
+            completionCounter = 0
+        }
     }
 
     private fun applyWindowing(audioData: ShortArray): ShortArray {
