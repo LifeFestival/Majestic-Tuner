@@ -8,6 +8,10 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -16,14 +20,17 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.example.testfieldapp.model.UiNote
 import com.example.testfieldapp.viewmodel.MainViewModel
+import com.example.testfieldapp.widgets.InstrumentSelectionWidget
 import com.example.testfieldapp.widgets.NoteListWidget
 import com.example.testfieldapp.widgets.TextRingWidget
 import com.example.testfieldapp.widgets.TuningWidget
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainScreen(
     modifier: Modifier,
@@ -47,6 +54,16 @@ fun MainScreen(
 
     val currentNote = viewModel.currentNote.collectAsStateWithLifecycle()
     val selectedNote = viewModel.selectedNote.collectAsStateWithLifecycle()
+
+    var showBottomSheet by remember { mutableStateOf(false) }
+
+    if (showBottomSheet) {
+        ModalBottomSheet(
+            onDismissRequest = { showBottomSheet = false }
+        ) {
+            InstrumentSelectionWidget()
+        }
+    }
 
     Column(
         modifier = modifier.fillMaxSize(),
@@ -76,7 +93,9 @@ fun MainScreen(
         )
         Spacer(modifier.weight(1f))
         NoteListWidget(modifier.weight(1f), viewModel)
-        TuningWidget(modifier.weight(2f), viewModel)
+        TuningWidget(modifier.weight(2f), viewModel, {
+            showBottomSheet = true
+        })
 
     }
 }
