@@ -55,6 +55,7 @@ fun MainScreen(
     ) {
         Spacer(modifier.weight(2f))
         TextRingWidget(
+            viewModel,
             modifier.weight(8f, fill = false),
             noteName = "${currentNote.value?.note?.symbol ?: '-'}",
             freqDiff = calculateIndexDiff(
@@ -80,7 +81,7 @@ fun MainScreen(
     }
 }
 
-private fun calculateIndexDiff(currentNote: UiNote?, targetNote: UiNote): String {
-    return if (currentNote == null) "-"
-    else (currentNote.note.noteIndex * currentNote.octave - targetNote.note.noteIndex * targetNote.octave).toString()
+private fun calculateIndexDiff(currentNote: UiNote?, targetNote: UiNote): Int? {
+    return if (currentNote == null) null
+    else currentNote.note.noteIndex * currentNote.octave - targetNote.note.noteIndex * targetNote.octave
 }

@@ -1,5 +1,8 @@
 package com.example.testfieldapp.widgets
 
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -69,7 +72,13 @@ fun NoteWidget(
 
     val backgroundColor = if (selectedNote.value == note) color else Color.Transparent
     val textColor = if (selectedNote.value == note) Color.Black else Color.Cyan
-    val borderColor = if (isCompleted) Color.Green else Color.White
+
+    val borderColor by animateColorAsState(
+        if (isCompleted) Color.Green else Color.White,
+        animationSpec = spring(
+            stiffness = Spring.StiffnessVeryLow
+        )
+    )
 
     Column(
         horizontalAlignment = Alignment.CenterHorizontally
