@@ -8,10 +8,8 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -20,7 +18,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.example.testfieldapp.model.UiNote
@@ -61,7 +58,7 @@ fun MainScreen(
         ModalBottomSheet(
             onDismissRequest = { showBottomSheet = false }
         ) {
-            InstrumentSelectionWidget()
+            InstrumentSelectionWidget(navController)
         }
     }
 
@@ -93,9 +90,9 @@ fun MainScreen(
         )
         Spacer(modifier.weight(1f))
         NoteListWidget(modifier.weight(1f), viewModel)
-        TuningWidget(modifier.weight(2f), viewModel, {
+        TuningWidget(modifier.weight(2f), viewModel) {
             showBottomSheet = true
-        })
+        }
 
     }
 }

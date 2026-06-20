@@ -78,6 +78,10 @@ class MainViewModel : ViewModel() {
         _selectedNote.value = note
     }
 
+    fun changeSelectedTuning(tuning: GuitarTune) {
+        _currentTune.value = tuning
+    }
+
     fun startRecording() {
         _isRecording.value = true
 

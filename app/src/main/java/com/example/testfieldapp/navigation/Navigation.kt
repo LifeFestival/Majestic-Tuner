@@ -8,6 +8,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.testfieldapp.screens.MainScreen
 import com.example.testfieldapp.screens.SettingsScreen
+import com.example.testfieldapp.screens.GuitarTuningScreen
 import com.example.testfieldapp.viewmodel.MainViewModel
 
 @Composable
@@ -22,11 +23,14 @@ fun Navigation(modifier: Modifier) {
         composable(route = Router.SettingsScreen.name) {
             SettingsScreen(modifier, navController, viewModel)
         }
+        composable(route = Router.GuitarTuningScreen.name) {
+            GuitarTuningScreen(modifier, viewModel)
+        }
     }
-
 }
 
 enum class Router {
     MainScreen,
-    SettingsScreen
+    SettingsScreen,
+    GuitarTuningScreen,
 }
