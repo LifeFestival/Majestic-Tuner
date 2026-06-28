@@ -24,7 +24,7 @@ fun Navigation(modifier: Modifier) {
             SettingsScreen(modifier, navController, viewModel)
         }
         composable(route = Router.GuitarTuningScreen.name) {
-            GuitarTuningScreen(modifier, viewModel)
+            GuitarTuningScreen(modifier, viewModel, navController)
         }
     }
 }
