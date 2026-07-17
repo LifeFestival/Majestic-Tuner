@@ -7,6 +7,7 @@ import android.media.MediaRecorder
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.testfieldapp.detector.PitchDetector
 import com.example.testfieldapp.model.CompletionState
 import com.example.testfieldapp.model.GuitarTune
 import com.example.testfieldapp.model.Note
@@ -18,6 +19,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import org.jtransforms.fft.DoubleFFT_1D
 import kotlin.math.cos
+import kotlin.math.floor
 import kotlin.math.ln
 import kotlin.math.pow
 import kotlin.math.roundToInt
@@ -33,7 +35,8 @@ class MainViewModel : ViewModel() {
 
         //Reference note in this case is A4
         private const val REF_NOTE_FREQUENCY = 440f
-        private const val REF_NOTE_INDEX = 57
+        private const val REF_NOTE_INDEX = 9
+        private const val REF_NOTE_OCTAVE = 4
     }
 
     private val bufferSize = AudioRecord.getMinBufferSize(
@@ -118,11 +121,8 @@ class MainViewModel : ViewModel() {
     }
 
     private fun calculateFrequency(audioData: ShortArray) {
-        //Создаем срез аудио данных
-        val actualAudioData: ShortArray = applyWindowing(audioData)
-
-        //Находим рутовую ноту
-        val frequency = findFundamentalFrequency(actualAudioData)
+        //Определяем основную частоту
+        val frequency = PitchDetector.detectPitch(audioData, SAMPLING_RATE)
 
         //Создаем UI модель
         val note = frequencyToNote(frequency)
@@ -145,79 +145,10 @@ class MainViewModel : ViewModel() {
         }
     }
 
-    private fun applyWindowing(audioData: ShortArray): ShortArray {
-        return ShortArray(audioData.size) { i ->
-            val window = 0.5 * (1 - cos(2 * Math.PI * i / (audioData.size - 1)))
-            (audioData[i] * window).toInt().toShort()
-        }
-    }
-
-    private fun findFundamentalFrequency(samples: ShortArray): Float {
-        val autocorr = DoubleArray(samples.size / 2)
-
-        for (lag in autocorr.indices) {
-            autocorr[lag] = (0 until samples.size - lag).sumOf {
-                samples[it].toDouble() * samples[it + lag]
-            }
-        }
-
-        val minLag = SAMPLING_RATE / 500 // 500Hz upper limit
-        val maxLag = SAMPLING_RATE / 50  // 50Hz lower limit
-
-        var maxLagIndex = minLag
-        for (i in minLag until maxLag) {
-            if (autocorr[i] > autocorr[maxLagIndex]) {
-                maxLagIndex = i
-            }
-        }
-
-        return SAMPLING_RATE.toFloat() / maxLagIndex
-    }
-
-    private fun findPitchCepstrum(samples: ShortArray): Float {
-        val fft = DoubleFFT_1D(samples.size.toLong())
-        val fftInput = DoubleArray(samples.size * 2).apply {
-            samples.forEachIndexed { i, sample ->
-                this[2 * i] = sample.toDouble()
-                this[2 * i + 1] = 0.0
-            }
-        }
-
-        fft.complexForward(fftInput)
-
-        val logSpectrum = DoubleArray(samples.size / 2) { i ->
-            val re = fftInput[2 * i]
-            val im = fftInput[2 * i + 1]
-            ln(sqrt(re * re + im * im))
-        }
-
-        val cepstrum = DoubleArray(samples.size * 2).apply {
-            System.arraycopy(logSpectrum, 0, this, 0, logSpectrum.size)
-            // Mirror for real IFFT
-            for (i in logSpectrum.size until samples.size) {
-                this[2 * i] = logSpectrum[samples.size - i - 1]
-                this[2 * i + 1] = 0.0
-            }
-        }
-        fft.complexInverse(cepstrum, true)
-
-        // 4. Find peak in guitar range (50-500Hz)
-        val minLag = SAMPLING_RATE / 500
-        val maxLag = SAMPLING_RATE / 50
-        var peakLag = minLag
-        for (i in minLag..maxLag) {
-            if (cepstrum[2 * i] > cepstrum[2 * peakLag]) {
-                peakLag = i
-            }
-        }
-
-        return SAMPLING_RATE.toFloat() / peakLag
-    }
-
-    private fun frequencyToNote(frequency: Float): UiNote {
+    private fun frequencyToNote(frequency: Float?): UiNote {
         Log.d("RAW INPUT", "Fequency - $frequency")
 
-        if (frequency <= 0) {
+        if (frequency == null) {
             return UiNote(
                 Note.None,
                 -1f,
@@ -226,10 +157,10 @@ class MainViewModel : ViewModel() {
         }
 
         val semitones = (OCTAVES_COUNT * log2(frequency / REF_NOTE_FREQUENCY)).roundToInt()
-        val octave = (semitones + REF_NOTE_INDEX) / OCTAVES_COUNT
+        val octave = floor((semitones + REF_NOTE_INDEX).toDouble() / OCTAVES_COUNT).toInt() + REF_NOTE_OCTAVE
         val noteIndex =
             ((semitones + 9) % OCTAVES_COUNT).let { if (it < 0) it + OCTAVES_COUNT else it }
-        val exactFrequency = REF_NOTE_FREQUENCY * 2f.pow((semitones) / OCTAVES_COUNT)
+        val exactFrequency = REF_NOTE_FREQUENCY * 2f.pow(semitones.toFloat() / OCTAVES_COUNT.toFloat())
 
         val note: Note = Note.entries.firstOrNull { it.noteIndex == noteIndex } ?: Note.None
 
