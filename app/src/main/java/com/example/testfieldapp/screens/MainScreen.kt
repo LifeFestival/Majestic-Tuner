@@ -50,7 +50,6 @@ fun MainScreen(
     }
 
     val currentNote = viewModel.currentNote.collectAsStateWithLifecycle()
-    val selectedNote = viewModel.selectedNote.collectAsStateWithLifecycle()
 
     var showBottomSheet by remember { mutableStateOf(false) }
 
@@ -69,13 +68,9 @@ fun MainScreen(
     ) {
         Spacer(modifier.weight(2f))
         TextRingWidget(
-            viewModel,
             modifier.weight(8f, fill = false),
             noteName = "${currentNote.value?.note?.symbol ?: '-'}",
-            freqDiff = calculateIndexDiff(
-                currentNote.value,
-                selectedNote.value
-            ),
+            freqDiff = currentNote.value?.cents,
             onClick = {
                 if (hasPermission) {
                     if (!isRecording.value) {
@@ -95,9 +90,4 @@ fun MainScreen(
         }
 
     }
-}
-
-private fun calculateIndexDiff(currentNote: UiNote?, targetNote: UiNote): Int? {
-    return if (currentNote == null) null
-    else currentNote.note.noteIndex * currentNote.octave - targetNote.note.noteIndex * targetNote.octave
 }

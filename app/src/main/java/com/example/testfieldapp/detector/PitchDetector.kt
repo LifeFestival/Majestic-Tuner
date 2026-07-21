@@ -6,7 +6,7 @@ object PitchDetector {
     private const val MIN_FREQUENCY = 60.0
     private const val MAX_FREQUENCY = 1000.0
 
-    private const val YIN_THRESHOLD = 0.2
+    private const val YIN_THRESHOLD = 0.1
 
     //Возвращаем частоту, либо null если не смогли её определить
     fun detectPitch(audioData: ShortArray, sampleRate: Int): Float? {

@@ -4,4 +4,5 @@ data class UiNote(
     val note: Note,
     val frequency: Float,
     val octave: Int,
+    val cents: Float = 0f
     )

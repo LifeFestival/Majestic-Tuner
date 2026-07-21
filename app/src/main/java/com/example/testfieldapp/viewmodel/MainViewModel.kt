@@ -128,13 +128,13 @@ class MainViewModel : ViewModel() {
         val note = frequencyToNote(frequency)
 
         //Проверяем результат
-        checkCompletion(note)
+        if (note != null) checkCompletion(note)
 
         _currentNote.value = note
     }
 
     private fun checkCompletion(note: UiNote) {
-        if (note.octave == selectedNote.value.octave && note.note.noteIndex == _selectedNote.value.note.noteIndex) {
+        if (note.cents <= 3) {
             completionCounter++
 
             if (completionCounter >= 5) {
@@ -145,36 +145,70 @@ class MainViewModel : ViewModel() {
         }
     }
 
-    private fun frequencyToNote(frequency: Float?): UiNote {
-        Log.d("RAW INPUT", "Fequency - $frequency")
+    private fun frequencyToNote(frequency: Float?): UiNote? {
+        Log.d("RAW INPUT", "Frequency - $frequency")
 
-        if (frequency == null) {
-            return UiNote(
-                Note.None,
-                -1f,
-                -1,
-            )
+        if (frequency == null || frequency <= 0) {
+            return null
         }
 
-        val semitones = (OCTAVES_COUNT * log2(frequency / REF_NOTE_FREQUENCY)).roundToInt()
-        val octave = floor((semitones + REF_NOTE_INDEX).toDouble() / OCTAVES_COUNT).toInt() + REF_NOTE_OCTAVE
-        val noteIndex =
-            ((semitones + 9) % OCTAVES_COUNT).let { if (it < 0) it + OCTAVES_COUNT else it }
-        val exactFrequency = REF_NOTE_FREQUENCY * 2f.pow(semitones.toFloat() / OCTAVES_COUNT.toFloat())
+        // Calculate MIDI note number (A4 = 69)
+        val midiNote = (12 * log2(frequency / 440.0f) + 69).roundToInt()
 
-        val note: Note = Note.entries.firstOrNull { it.noteIndex == noteIndex } ?: Note.None
+        if (midiNote !in 0..127) {
+            return UiNote(Note.None, -1f, -1)
+        }
 
-        Log.d(
-            "NOTE",
-            "Semitones - $semitones, index - $noteIndex, freq - $exactFrequency, octave - $octave, note - ${note.symbol}"
-        )
+        // Note index: C=0, C#=1, ..., A=9, A#=10, B=11
+        val noteIndex = midiNote % 12
 
-        return UiNote(
-            note,
-            exactFrequency,
-            octave,
-        )
+        // OCTAVE CALCULATION (CORRECT):
+        // MIDI: C0 = 12, so octave = (note / 12) - 1
+        // C4 = 60, so 60/12 - 1 = 4 ✓
+        val octave = (midiNote / 12) - 1
+
+        val exactFrequency = 440.0f * 2f.pow((midiNote - 69).toFloat() / 12)
+        val note = Note.entries.firstOrNull { it.noteIndex == noteIndex } ?: Note.None
+
+        // Calculate cents deviation (how many cents off from the exact note)
+        val cents = 1200 * log2(frequency / exactFrequency)
+
+        Log.d("NOTE", "MIDI: $midiNote, Index: $noteIndex, " +
+                "Octave: $octave, Note: ${note.symbol}")
+
+        return UiNote(note, exactFrequency, octave, cents)
     }
+
+//    private fun frequencyToNote(frequency: Float?): UiNote {
+//        Log.d("RAW INPUT", "Fequency - $frequency")
+//
+//        if (frequency == null) {
+//            return UiNote(
+//                Note.None,
+//                -1f,
+//                -1,
+//            )
+//        }
+//
+//        val semitones = (OCTAVES_COUNT * log2(frequency / REF_NOTE_FREQUENCY)).roundToInt()
+//        val octave = floor((semitones + REF_NOTE_INDEX).toDouble() / OCTAVES_COUNT).toInt() + REF_NOTE_OCTAVE
+//        val noteIndex =
+//            ((semitones + 9) % OCTAVES_COUNT).let { if (it < 0) it + OCTAVES_COUNT else it }
+//        val exactFrequency = REF_NOTE_FREQUENCY * 2f.pow(semitones.toFloat() / OCTAVES_COUNT.toFloat())
+//
+//        val note: Note = Note.entries.firstOrNull { it.noteIndex == noteIndex } ?: Note.None
+//
+//        Log.d(
+//            "NOTE",
+//            "Semitones - $semitones, index - $noteIndex, freq - $exactFrequency, octave - $octave, note - ${note.symbol}"
+//        )
+//
+//        return UiNote(
+//            note,
+//            exactFrequency,
+//            octave,
+//        )
+//    }
 
     private fun log2(x: Float) = (ln(x) / ln(2f))
 }

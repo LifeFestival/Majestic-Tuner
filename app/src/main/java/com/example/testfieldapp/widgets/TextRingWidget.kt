@@ -24,19 +24,23 @@ import kotlin.math.absoluteValue
 
 @Composable
 fun TextRingWidget(
-    viewModel: MainViewModel,
     modifier: Modifier,
     onClick: () -> Unit,
     noteName: String,
-    freqDiff: Int?
+    freqDiff: Float?
 ) {
-    val freqText = freqDiff?.toString() ?: "-"
+    val freqText = when {
+        freqDiff == null -> "-"
+        freqDiff > 0 -> "+${"%.1f".format(freqDiff)}¢"
+        freqDiff < 0 -> "${"%.1f".format(freqDiff)}¢"
+        else -> "0¢"
+    }
 
     val borderColor by animateColorAsState(
         when {
             freqDiff == null -> Color.White
-            freqDiff.absoluteValue <= 0.5 -> Color.Green
-            freqDiff.absoluteValue > 0.5 && freqDiff.absoluteValue < 3 -> Color.Yellow
+            freqDiff.absoluteValue <= 3 -> Color.Green
+            freqDiff.absoluteValue > 3 && freqDiff.absoluteValue < 12 -> Color.Yellow
 
             else -> Color.Red
         },
